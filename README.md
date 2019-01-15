@@ -23,21 +23,25 @@ image_classify_inception.py
 数据制作请参考flowers
 
 ### 训练
-train.py/train.sh
-终端中运行：source train.sh即可
+* train.py/train.sh
+* 终端中运行：source train.sh 即可
 
 ### 评估
-eval.py/eval.sh
-终端中运行：source eval.sh即可
+* eval.py/eval.sh
+* 终端中运行：source eval.sh 即可
+
+### 可视化
+* show_train.py 训练
+* show_eval.py 评估
 
 ### 导出模型
-export.py/export.sh
-终端中运行：source export.sh即可
+* export.py/export.sh
+* 终端中运行：source export.sh 即可
 
 ### 测试
 eval_single_img.py
 
 ### 模型配置文件
-train_inception.py 配置训练的参数，例如：网络模型选择，训练次数，batch_size、指定GPU等
-config.py 指定训练的业务
+* train_inception.py 配置训练的参数(网络模型选择，训练次数，batch_size、指定GPU等)
+* config.py 指定训练的业务
 
