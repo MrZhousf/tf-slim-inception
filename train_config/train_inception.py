@@ -213,19 +213,6 @@ class Inception(object):
         os.system(tensor_board)
 
 
-class TrainCardsV4(Inception):
-
-    def __init__(self):
-        model_name = MODEL_INCEPTION_V4
-        train_name = 'cards'
-        dataset = 'cards'
-        dataset_dir = '/Users/zhousf/tensorflow/zhousf/data/cards'
-        train_num = 20000
-        batch_size = 32
-        gpu_with_train = '0'
-        Inception.__init__(self,
-                           train_name=train_name, dataset_dir=dataset_dir, gpu_with_train=gpu_with_train,
-                           model_name=model_name, dataset=dataset, train_num=train_num, batch_size=batch_size)
 
 
 class TrainFlowersV3(Inception):
@@ -235,9 +222,9 @@ class TrainFlowersV3(Inception):
         train_name = 'flowers'
         dataset = 'flowers'
         dataset_dir = '../data/flowers'
-        train_num = 100
+        train_num = 100000
         batch_size = 32
-        gpu_with_train = ''
+        gpu_with_train = '0'
         Inception.__init__(self,
                            train_name=train_name, dataset_dir=dataset_dir, gpu_with_train=gpu_with_train,
                            model_name=model_name, dataset=dataset, train_num=train_num, batch_size=batch_size)
@@ -249,7 +236,7 @@ class TrainFlowersV4(Inception):
         model_name = MODEL_INCEPTION_V4
         train_name = 'flowers'
         dataset = 'flowers'
-        dataset_dir = '/Users/zhousf/tensorflow/zhousf/data/flowers'
+        dataset_dir = '../data/flowers'
         train_num = 500000
         batch_size = 32
         gpu_with_train = '1'
