@@ -107,10 +107,18 @@ class Inception(object):
             --image_size=%d \
             --log_every_n_steps=10 \
             --optimizer=rmsprop \
-            --weight_decay=0.00004 ' % (
-                self.model_dir, self.train_dir, self.dataset, self.dataset_dir, self.model_name,
-                self.initial_checkpoint, self.checkpoint_exclude_scopes, self.trainable_scopes,
-                self.train_num, self.batch_size, self.learning_rate, self.image_size)
+            --weight_decay=0.00004 ' % (self.model_dir,
+                                        self.train_dir,
+                                        self.dataset,
+                                        self.dataset_dir,
+                                        self.model_name,
+                                        self.initial_checkpoint,
+                                        self.checkpoint_exclude_scopes,
+                                        self.trainable_scopes,
+                                        self.train_num,
+                                        self.batch_size,
+                                        self.learning_rate,
+                                        self.image_size)
         if self.gpu_with_train == '':
             train_command += '--clone_on_cpu=True'
         else:
@@ -127,8 +135,14 @@ class Inception(object):
                        --dataset_dir=%s \
                        --model_name=%s \
                        --image_size=%d \
-                       --batch_size=%d' % (self.model_dir, self.train_dir, self.dataset, self.eval_dir,
-                                            self.dataset_dir, self.model_name, self.image_size, self.batch_size)
+                       --batch_size=%d' % (self.model_dir,
+                                           self.train_dir,
+                                           self.dataset,
+                                           self.eval_dir,
+                                           self.dataset_dir,
+                                           self.model_name,
+                                           self.image_size,
+                                           self.batch_size)
         os.environ["CUDA_VISIBLE_DEVICES"] = self.gpu_with_train
         os.system(eval_command)
 
@@ -156,8 +170,11 @@ class Inception(object):
                          --model_name=%s \
                          --output_file=%s \
                          --dataset_name=%s \
-                         --image_size=%d ' % (self.model_dir, self.model_name, inception_file, self.dataset,
-                                               self.image_size)
+                         --image_size=%d ' % (self.model_dir,
+                                              self.model_name,
+                                              inception_file,
+                                              self.dataset,
+                                              self.image_size)
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         os.system(export_command)
         from tensorflow.python.tools import freeze_graph
@@ -169,8 +186,10 @@ class Inception(object):
                          --input_checkpoint=%s \
                          --output_graph=%s \
                          --input_binary=True \
-                         --output_node_name=%s ' % (
-                         os.path.abspath(freeze_graph.__file__), input_graph, input_checkpoint, output_graph,
+                         --output_node_name=%s ' % (os.path.abspath(freeze_graph.__file__),
+                                                    input_graph,
+                                                    input_checkpoint,
+                                                    output_graph,
                          self.output_node_name)
         os.system(freeze_command)
 
@@ -197,8 +216,12 @@ class Inception(object):
         output_node_name = self.output_node_name + ':0'
         from slim import eval_single_image_inception
         num_top_predictions = 5
-        result = eval_single_image_inception.infer(image_path, pb_model_path, class_names_file,
-                                      self.image_size, num_top_predictions, output_node_name)
+        result = eval_single_image_inception.infer(image_path,
+                                                   pb_model_path,
+                                                   class_names_file,
+                                                   self.image_size,
+                                                   num_top_predictions,
+                                                   output_node_name)
         print (result)
 
     def vis(self):
@@ -226,8 +249,13 @@ class TrainFlowersV3(Inception):
         batch_size = 32
         gpu_with_train = '0'
         Inception.__init__(self,
-                           train_name=train_name, dataset_dir=dataset_dir, gpu_with_train=gpu_with_train,
-                           model_name=model_name, dataset=dataset, train_num=train_num, batch_size=batch_size)
+                           train_name=train_name,
+                           dataset_dir=dataset_dir,
+                           gpu_with_train=gpu_with_train,
+                           model_name=model_name,
+                           dataset=dataset,
+                           train_num=train_num,
+                           batch_size=batch_size)
 
 
 class TrainFlowersV4(Inception):
@@ -241,5 +269,10 @@ class TrainFlowersV4(Inception):
         batch_size = 32
         gpu_with_train = '1'
         Inception.__init__(self,
-                           train_name=train_name, dataset_dir=dataset_dir, gpu_with_train=gpu_with_train,
-                           model_name=model_name, dataset=dataset, train_num=train_num, batch_size=batch_size)
+                           train_name=train_name,
+                           dataset_dir=dataset_dir,
+                           gpu_with_train=gpu_with_train,
+                           model_name=model_name,
+                           dataset=dataset,
+                           train_num=train_num,
+                           batch_size=batch_size)
