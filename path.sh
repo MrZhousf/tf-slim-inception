@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-export PYTHONPATH=$PYTHONPATH:/Users/zhousf/tensorflow/zhousf/tf-slim-inception/models-master
-export PYTHONPATH=$PYTHONPATH:/Users/zhousf/tensorflow/zhousf/tf-slim-inception/models-master/research
-export PYTHONPATH=$PYTHONPATH:/Users/zhousf/tensorflow/zhousf/tf-slim-inception/models-master/research/slim
-export PYTHONPATH=$PYTHONPATH:/Users/zhousf/tensorflow/zhousf/tf-slim-inception/models-master/research/slim/datasets
-export PYTHONPATH=$PYTHONPATH:/Users/zhousf/tensorflow/zhousf/tf-slim-inception
+PROJECT_DIR=`pwd`
+export PYTHONPATH=$PYTHONPATH:$PROJECT_DIR
+export PYTHONPATH=$PYTHONPATH:$PROJECT_DIR/models-master
+export PYTHONPATH=$PYTHONPATH:$PROJECT_DIR/models-master/research
+export PYTHONPATH=$PYTHONPATH:$PROJECT_DIR/models-master/research/slim
+export PYTHONPATH=$PYTHONPATH:$PROJECT_DIR/models-master/research/slim/datasets

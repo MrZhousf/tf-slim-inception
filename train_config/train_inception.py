@@ -164,21 +164,25 @@ class Inception(object):
             save_dir = self.save_model_dir
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
-        inception_file = save_dir + '/inception.pb'
+        save_pb = save_dir + '/inception.pb'
+        shutil.copy(checkpoint + '.meta', save_dir)
+        shutil.copy(checkpoint + '.index', save_dir)
+        shutil.copy(checkpoint + '.data-00000-of-00001', save_dir)
         print(checkpoint)
+        print(save_pb)
         export_command = 'python %s/export_inference_graph.py \
                          --model_name=%s \
                          --output_file=%s \
                          --dataset_name=%s \
                          --image_size=%d ' % (self.model_dir,
                                               self.model_name,
-                                              inception_file,
+                                              save_pb,
                                               self.dataset,
                                               self.image_size)
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         os.system(export_command)
         from tensorflow.python.tools import freeze_graph
-        input_graph = inception_file
+        input_graph = save_pb
         input_checkpoint = checkpoint
         output_graph = save_dir + '/frozen_inference_graph.pb'
         freeze_command = 'python -u %s \
