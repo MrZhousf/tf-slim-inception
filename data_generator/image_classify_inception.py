@@ -27,6 +27,12 @@ def convert_record(convert, img_dir, data_name):
 
 
 def check_data(img_dir, unqualified_dir):
+    """
+    检查图片
+    :param img_dir:
+    :param unqualified_dir:
+    :return:
+    """
     if not os.path.exists(unqualified_dir):
         os.makedirs(unqualified_dir)
     total = 0
