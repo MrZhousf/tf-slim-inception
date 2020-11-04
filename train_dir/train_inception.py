@@ -262,8 +262,8 @@ class TrainFlowersV3(Inception):
         model_name = MODEL_INCEPTION_V3
         train_name = 'flowers'
         dataset = 'flowers'
-        dataset_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/flowers'
-        train_num = 10000
+        dataset_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/flowers'
+        train_num = 1000
         batch_size = 32
         gpu_with_train = '1'
         gpu_with_eval = '1'
@@ -285,8 +285,8 @@ class TrainFlowersV4(Inception):
         model_name = MODEL_INCEPTION_V4
         train_name = 'flowers'
         dataset = 'flowers'
-        dataset_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/flowers'
-        train_num = 10000
+        dataset_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/flowers'
+        train_num = 1000
         batch_size = 32
         gpu_with_train = '0'
         gpu_with_eval = '0'
