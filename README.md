@@ -5,7 +5,7 @@ tensorflow-slim下的inception_v3、inception_v4、inception_resnet_v2分类模�
 
 ## 相关截图
 ### 项目结构
-![](https://github.com/MrZhousf/tf-slim-inception/blob/master/pic/1.png?raw=true)
+![](https://github.com/MrZhousf/tf-slim-inception/blob/master/pic/11.png?raw=true)
 
 ### 路径配置
 将path.sh中的路径修改成自己的路径即可
