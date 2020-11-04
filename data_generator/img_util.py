@@ -5,13 +5,13 @@
 # Description: 图片处理: 图片增强、旋转、镜像
 import os, shutil
 import cv2
-from core.util import file_util
+from data_generator import file_util
 import numpy as np
-from PIL import Image, ImageEnhance, ImageStat
+from PIL import Image, ImageEnhance
 from matplotlib import pyplot as plt
 import json
 import base64
-import math
+import imghdr
 
 
 class ImgOperator:
@@ -255,7 +255,7 @@ def move_limit_width_height(img_dir, out_limit_dir, limit_width, limit_height, e
                     json_f = file_util.file_basename(f)
                     json_f += '.json'
                     file_util.move_file(os.path.join(root, json_f), out_limit_dir)
-                    print ('width: %d height: %d channel: %d' % (width, height, channel))
+                    print('width: %d height: %d channel: %d' % (width, height, channel))
                     limit += 1
                     continue
                 if height > limit_height:
@@ -263,7 +263,7 @@ def move_limit_width_height(img_dir, out_limit_dir, limit_width, limit_height, e
                     json_f = file_util.file_basename(f)
                     json_f += '.json'
                     file_util.move_file(os.path.join(root, json_f), out_limit_dir)
-                    print ('width: %d height: %d channel: %d' % (width, height, channel))
+                    print('width: %d height: %d channel: %d' % (width, height, channel))
                     limit += 1
                     continue
     print('total=' + str(total) + ',limit=' + str(limit))
@@ -412,32 +412,7 @@ def enhance(src_dir, dst_dir):
     print('total=%d' % total)
 
 
-def dilate_demo():
-    """
-    图像腐蚀操作
-    :return:
-    """
-    from core.util.infer_segment import InferSegment
-
-    class_names_file = '/home/ubuntu/zsf/zhousf/tf_project/my_models/deeplabv3_dpc_cityscapes_trainfine/car/class_names.txt'
-    pb_model_path = '/home/ubuntu/zsf/zhousf/tf_project/my_models/deeplabv3_dpc_cityscapes_trainfine/car/export/129068/frozen_inference_graph.pb'
-    infer = InferSegment(input_size=513, label_file=class_names_file, pb_file=pb_model_path)
-    img = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/1.JPG'
-    class_label_map, seg_map, resized_im = infer.infer(img)
-    seg_image = np.array(seg_map).astype(np.uint8)
-    # 卷积核大小
-    kernel = np.ones((10, 10), np.uint8)
-    # 图像腐蚀操作
-    dst = cv2.dilate(seg_image, kernel)
-    plt.figure()
-    plt.imshow(resized_im)
-    plt.imshow(dst, alpha=0.4)
-    plt.axis('off')
-    plt.title('segmentation overlay')
-    plt.show()
-
-
-def compress_img(src_dir, quality=30):
+def compress_img(src_dir, quality=20):
     total = 0
     for root, dirs, files in os.walk(src_dir):
         for f in files:
@@ -454,12 +429,8 @@ def compress_img(src_dir, quality=30):
 
 
 def is_img(img_file):
-    if isinstance(img_file, str):
-        if img_file.endswith(".jpg") \
-                or img_file.endswith(".JPG") \
-                or img_file.endswith(".PNG") \
-                or img_file.endswith(".png"):
-            return True
+    if imghdr.what(img_file):
+        return True
     return False
 
 
@@ -478,16 +449,13 @@ def save_img_form(image, save_path):
     size = os.path.getsize(save_full_path)
     if size == 0:
         return False, "image content length is zero"
-    try:
-        img = Image.open(save_full_path)
-        img_array = np.array(img)
-        if img_array.shape[2] != 3:
-            img = img.convert("RGB")
-            img.save(save_full_path)
-            if not os.path.exists(save_full_path):
-                return False, "convert image to RGB failed".format(image.name)
-    except Exception as ex:
-        print(ex)
+    img = Image.open(save_full_path)
+    img_array = np.array(img)
+    if img_array.shape[2] != 3:
+        img = img.convert("RGB")
+        img.save(save_full_path)
+        if not os.path.exists(save_full_path):
+            return False, "convert image to RGB failed".format(image.name)
     return True, save_full_path
 
 
@@ -507,10 +475,51 @@ def check_img_available_form(image, img_types=None):
     return True
 
 
+def is_available_img(data_dir, remove_dir):
+    """
+    检测图片是否可用
+    :param data_dir: 图片目录
+    :param remove_dir: 不可用文件保存目录
+    :return:
+    """
+    if os.path.exists(remove_dir):
+        file_util.delete_dir(remove_dir)
+    os.makedirs(remove_dir)
+    total = 0
+    unqualified = 0
+    for root, dirs, files in os.walk(data_dir):
+        for img in files:
+            total += 1
+            print(total)
+            current_file = os.path.join(root, img)
+            if not is_img(current_file):
+                file_util.move_file(current_file, remove_dir)
+                unqualified += 1
+                continue
+            if not is_rgb(current_file):
+                file_util.move_file(current_file, remove_dir)
+                unqualified += 1
+                continue
+            # 判定jpg是否包含结束字段
+            with open(current_file, 'rb') as f:
+                f.seek(-2, 2)
+                buf = f.read()
+                f.close()
+                if buf != b'\xff\xd9':
+                    file_util.move_file(current_file, remove_dir)
+                    unqualified += 1
+                    continue
+    print("total={0}, remove={1}".format(total, unqualified))
+
+
 def is_rgb(img_file):
-    img = Image.open(img_file)
-    img_array = np.array(img)
-    if img_array.shape[2] != 3:
+    try:
+        img = Image.open(img_file)
+        img_array = np.array(img)
+        if img_array.shape[2] != 3:
+            return False
+        pass
+    except Exception:
         return False
     return True
 
@@ -530,6 +539,7 @@ def check_img_rgb(src_dir, dst_dir):
                 shutil.move(f, os.path.join(dst_dir, file))
                 not_rgb += 1
             total += 1
+            print(total)
     print("共{0}项，{1}项不是rgb".format(total, not_rgb))
 
 
@@ -587,85 +597,24 @@ def find_repeat_img(data_pool, data_dir, repeat_dir):
     pass
 
 
-def get_image_light_mean(dst_src):
-    im = Image.open(dst_src).convert('L')
-    stat = ImageStat.Stat(im)
-    return stat.mean[0]
-
-
-def get_image_light_rms(dst_src):
-    im = Image.open(dst_src).convert('L')
-    stat = ImageStat.Stat(im)
-    return stat.rms[0]
-
-
-def get_image_light_rms_sqrt(dst_src):
-    im = Image.open(dst_src)
-    stat = ImageStat.Stat(im)
-    r, g, b = stat.rms
-    return math.sqrt(0.241 * (r ** 2) + 0.691 * (g ** 2) + 0.068 * (b ** 2))
-
-
-def get_image_light_gs(dst_src):
-    im = Image.open(dst_src)
-    stat = ImageStat.Stat(im)
-    gs = (math.sqrt(0.241 * (r ** 2) + 0.691 * (g ** 2) + 0.068 * (b ** 2))
-          for r, g, b in im.getdata())
-    return sum(gs) / stat.count[0]
-
-
-def get_image_definition(img_file):
-    """
-    :param img_file:
-    :return:
-    """
-    img_file = cv2.imread(img_file)
-    img_file = cv2.cvtColor(img_file, cv2.COLOR_BGR2GRAY)
-    return cv2.Laplacian(img_file, cv2.CV_64F).var()
-
-
-def rename_file_with_md5(src_dir):
-    """
-    将目录下的jpg文件以md5重新命名
-    src_dir：待处理目录
-    """
-    total_num = 0
-    repeat_num = 0
-    for root, dirs, files in os.walk(src_dir):
-        for f in files:
-            if not is_img(f):
-                continue
-            total_num += 1
-            file_path = root + '/' + f
-            name_new = src_dir + '/' + file_util.md5(file_path) + '.jpg'
-            if not os.path.exists(name_new):
-                print(name_new)
-                os.rename(file_path, name_new)
-            else:
-                repeat_num += 1
-    print('共：' + str(total_num) + '项，有效项：' + str(total_num - repeat_num) +
-          '，重复项' + str(repeat_num))
-
-
 if __name__ == '__main__':
-    # for root, dirs, files in os.walk("/home/ubuntu/test/1"):
-    #     for file in files:
-    #         if not is_img(file):
-    #             continue
-    #         img = os.path.join(root, file)
-    #         definition = get_image_definition(img)
-    #         print(file, definition, get_image_light_rms_sqrt(img))
-    src = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/singapore/test/img"
-    dst = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/singapore/test/not_rgb"
-    # rename_file_with_md5("/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/ocr_img/vin")
-    # check_img_rgb(src_dir=src, dst_dir=dst)
+    src_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/part/middle'
+    dst_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/part/error'
+    data_pool = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/windscreen/singapore/data"
+    data_dir = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/windscreen/jy/damage"
+    repeat_dir = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/windscreen/repeat"
+    # find_repeat_img(data_pool, data_dir, repeat_dir)
+    # mod_img_width_height(src_dir, dst_dir=None, width=1920, height=1920)
+    # enhance(src_dir, dst_dir)
+    # check_img_rgb(src_dir, dst_dir)
     # a = cv2.imread('/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/1/MT1042898-001/1.JPG')
     # print(cv2.imwrite('/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/1/MT1042898-001/1_1.JPG', a))
-    # compress_img('/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/workspace/AI_TEST/img_test/')
+    # compress_img('/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/test/')
     # img_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/segment/part'
-    # out_limit_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/segment/part-limit'
-    # fetch_max_width_height(img_dir)
-    # move_limit_width_height(img_dir, out_limit_dir, 1920, 1920)
+    # fetch_max_width_height(src_dir)
+    # src_dir = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/DATA_CLEAN/damage_whole/img"
+    # out_limit_dir = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-factory/DATA_CLEAN/damage_whole/limit"
+    # move_limit_width_height(src_dir, out_limit_dir, 1920, 1920)
     # img_dir = '/home/ubuntu/zsf/dl/sample'
     # out_limit_dir = '/home/ubuntu/zsf/dl/sample-limit'
     # fetch_max_width_height(img_dir)
@@ -688,9 +637,10 @@ if __name__ == '__main__':
     # image = Image.fromarray(cv2.cvtColor(resize, cv2.COLOR_BGR2RGB))
     # enhance_overwrite(image)
 
-    # root_dir = '/home/ubuntu/zsf/dl/plate/'
-    # src_dir = root_dir + 'data/'
-    # dst_dir = root_dir + 'data_generate_sample/'
-    # op = ImgOperator(src_dir, dst_dir)
-    # op.auto_deal()
+    root_dir = '/home/ubuntu/zsf/dl/plate/'
+    src_dir = root_dir + 'data/'
+    dst_dir = root_dir + 'data_generate_sample/'
+    op = ImgOperator(src_dir, dst_dir)
+    op.auto_deal()
+
     pass

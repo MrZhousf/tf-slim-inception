@@ -7,6 +7,7 @@ import os
 import warnings
 import shutil
 import numpy as np
+from train_dir.infer_inception import Prediction
 
 MODEL_INCEPTION_V3 = 'inception_v3'
 MODEL_INCEPTION_V4 = 'inception_v4'
@@ -19,6 +20,7 @@ class Inception(object):
                  train_name='',
                  dataset_dir='',
                  gpu_with_train='0',
+                 gpu_with_eval='0',
                  model_name=MODEL_INCEPTION_V3,
                  dataset='flowers',
                  train_num=10000000,
@@ -38,14 +40,17 @@ class Inception(object):
             self.output_node_name = 'InceptionV4/Logits/Predictions'
         else:
             warnings.warn('不支持模型：'+model_name)
+        self.classify = None
+        self.pb_model_path = None
         self.checkpoint_exclude_scopes='%s/Logits,%s/AuxLogits'%(model_node_name,model_node_name)
         self.trainable_scopes='%s/Logits,%s/AuxLogits'%(model_node_name,model_node_name)
         self.image_size = image_size
         self.learning_rate = learning_rate
         self.train_name = train_name
         self.gpu_with_train = gpu_with_train
-        self.model_dir = os.getcwd() + '/models-master/research/slim'
-        self.mymodels_dir = os.getcwd() + '/my_models'
+        self.gpu_with_eval = gpu_with_eval
+        self.model_dir = os.path.dirname(os.getcwd()) + '/model/research/slim'
+        self.mymodels_dir = os.path.dirname(os.getcwd()) + '/my_models'
         self.initial_checkpoint = self.mymodels_dir + '/' + model_name + '/' + model_name + '.ckpt'
         self.dataset = dataset
         self.train_num = train_num
@@ -143,19 +148,30 @@ class Inception(object):
                                            self.model_name,
                                            self.image_size,
                                            self.batch_size)
-        os.environ["CUDA_VISIBLE_DEVICES"] = self.gpu_with_train
+        os.environ["CUDA_VISIBLE_DEVICES"] = self.gpu_with_eval
         os.system(eval_command)
 
-    def export(self):
-        file_list = os.listdir(self.train_dir)
+    @staticmethod
+    def fetch_max_ckpt(train_dir):
+        """
+        获取train_dir中最大ckpt
+        :param train_dir:
+        :return:
+        """
+        file_list = os.listdir(train_dir)
         check_file = []
         for i in range(0, len(file_list)):
-            path = os.path.join(self.train_dir, file_list[i])
+            path = os.path.join(train_dir, file_list[i])
             if path.endswith(".index"):
-                name, index = path.split("-")
+                p = os.path.basename(path)
+                name, index = p.split("-")
                 num, ext = index.split(".")
                 check_file.append(int(num))
         point = max(check_file)
+        return point
+
+    def export(self):
+        point = self.fetch_max_ckpt(self.train_dir)
         if point > 0:
             checkpoint = self.trained_checkpoint + "-" + str(point)
             save_dir = self.save_model_dir + "/" + str(point)
@@ -164,12 +180,11 @@ class Inception(object):
             save_dir = self.save_model_dir
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
-        save_pb = save_dir + '/inception.pb'
+        save_pb = save_dir + '/saved_model.pb'
         shutil.copy(checkpoint + '.meta', save_dir)
         shutil.copy(checkpoint + '.index', save_dir)
         shutil.copy(checkpoint + '.data-00000-of-00001', save_dir)
         print(checkpoint)
-        print(save_pb)
         export_command = 'python %s/export_inference_graph.py \
                          --model_name=%s \
                          --output_file=%s \
@@ -197,49 +212,48 @@ class Inception(object):
                          self.output_node_name)
         os.system(freeze_command)
 
-    def vis_single_img(self, image_path, class_names_file=None, pb_model_path=None, show=True):
-        if not os.path.exists(image_path):
-            warnings.warn(image_path+'不存在')
-            return
-        if class_names_file is None:
-            class_names_file = self.class_names_file
-        if pb_model_path is None:
-            file_list = os.listdir(self.save_model_dir)
-            check_file = []
-            for i in range(0, len(file_list)):
-                if os.path.isdir(os.path.join(self.save_model_dir, file_list[i])):
-                    check_file.append(int(file_list[i]))
-            if len(check_file) == 0:
-                warnings.warn('frozen_inference_graph.pb不存在')
+    def vis_single_img(self, image_path, class_names_file=None, pb_model_path=None, num_top_predictions=5):
+        if self.pb_model_path is None:
+            if not os.path.exists(image_path):
+                warnings.warn(image_path + '不存在')
                 return
-            max_num = str(max(check_file))
-            pb_model_path = self.save_model_dir + '/' + max_num + '/frozen_inference_graph.pb'
-            if not os.path.exists(pb_model_path):
-                warnings.warn(pb_model_path + '不存在')
-                return
-        output_node_name = self.output_node_name + ':0'
-        from slim import eval_single_image_inception
-        num_top_predictions = 5
-        result = eval_single_image_inception.infer(image_path,
-                                                   pb_model_path,
-                                                   class_names_file,
-                                                   self.image_size,
-                                                   num_top_predictions,
-                                                   output_node_name)
-        print (result)
+            if class_names_file is None:
+                class_names_file = self.class_names_file
+            if pb_model_path is None:
+                file_list = os.listdir(self.save_model_dir)
+                check_file = []
+                for i in range(0, len(file_list)):
+                    if os.path.isdir(os.path.join(self.save_model_dir, file_list[i])):
+                        check_file.append(int(file_list[i]))
+                if len(check_file) == 0:
+                    warnings.warn('frozen_inference_graph.pb不存在')
+                    return
+                max_num = str(max(check_file))
+                pb_model_path = self.save_model_dir + '/' + max_num + '/frozen_inference_graph.pb'
+                if not os.path.exists(pb_model_path):
+                    warnings.warn(pb_model_path + '不存在')
+                    return
+                self.pb_model_path = pb_model_path
+        if self.classify is None:
+            print(pb_model_path)
+            self.classify = Prediction(pb_file=pb_model_path,
+                                       label_file=class_names_file,
+                                       gpu_assigned=self.gpu_with_train,
+                                       num_top_predictions=num_top_predictions,
+                                       model_type=Prediction.INCEPTION_V3)
+        result = self.classify.infer(image_file=image_path)
+        return result
 
     def vis(self):
         pass
 
-    def show_eval(self, port=6007):
+    def show_eval(self, port=6017):
         tensor_board = 'tensorboard --logdir %s/ --port %d' % (self.eval_dir, port)
         os.system(tensor_board)
 
-    def show_train(self, port=6006):
+    def show_train(self, port=6016):
         tensor_board = 'tensorboard --logdir %s/ --port %d' % (self.train_dir, port)
         os.system(tensor_board)
-
-
 
 
 class TrainFlowersV3(Inception):
@@ -248,16 +262,19 @@ class TrainFlowersV3(Inception):
         model_name = MODEL_INCEPTION_V3
         train_name = 'flowers'
         dataset = 'flowers'
-        dataset_dir = '../data/flowers'
-        train_num = 100000
+        dataset_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/flowers'
+        train_num = 10000
         batch_size = 32
-        gpu_with_train = '0'
+        gpu_with_train = '1'
+        gpu_with_eval = '1'
         Inception.__init__(self,
                            train_name=train_name,
                            dataset_dir=dataset_dir,
                            gpu_with_train=gpu_with_train,
+                           gpu_with_eval=gpu_with_eval,
                            model_name=model_name,
                            dataset=dataset,
+                           learning_rate=0.01,
                            train_num=train_num,
                            batch_size=batch_size)
 
@@ -268,15 +285,29 @@ class TrainFlowersV4(Inception):
         model_name = MODEL_INCEPTION_V4
         train_name = 'flowers'
         dataset = 'flowers'
-        dataset_dir = '../data/flowers'
-        train_num = 500000
+        dataset_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/flowers'
+        train_num = 10000
         batch_size = 32
-        gpu_with_train = '1'
+        gpu_with_train = '0'
+        gpu_with_eval = '0'
         Inception.__init__(self,
                            train_name=train_name,
                            dataset_dir=dataset_dir,
                            gpu_with_train=gpu_with_train,
+                           gpu_with_eval=gpu_with_eval,
                            model_name=model_name,
                            dataset=dataset,
+                           learning_rate=0.01,
                            train_num=train_num,
                            batch_size=batch_size)
+
+
+if __name__ == '__main__':
+    model = TrainFlowersV3()
+    # model.train()
+    model.eval()
+    # model.show_train()
+    # model.show_eval()
+    # model.export()
+    # print(model.vis_single_img("/home/ubuntu/桌面/AI_demo/分类/others其他/biaodiche1521434853703.jpg"))
+

@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
-from train_config import config
-
+from train_dir import config
 
 if __name__ == '__main__':
     # image_path = '/home/ubuntu/zsf/dl/plate/data/2293-C610100VEH16017888_15.jpg'

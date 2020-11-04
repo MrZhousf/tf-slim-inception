@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
-from train_config import config
-
+from train_dir import config
 
 '''
 训练
