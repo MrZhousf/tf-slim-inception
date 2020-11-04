@@ -41,6 +41,30 @@ def int64_feature(values):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=values))
 
 
+def bytes_list_feature(values):
+  """Returns a TF-Feature of list of bytes.
+
+  Args:
+    values: A string or list of strings.
+
+  Returns:
+    A TF-Feature.
+  """
+  return tf.train.Feature(bytes_list=tf.train.BytesList(value=values))
+
+
+def float_list_feature(values):
+  """Returns a TF-Feature of list of floats.
+
+  Args:
+    values: A float or list of floats.
+
+  Returns:
+    A TF-Feature.
+  """
+  return tf.train.Feature(float_list=tf.train.FloatList(value=values))
+
+
 def bytes_feature(values):
   """Returns a TF-Feature of bytes.
 
@@ -111,7 +135,8 @@ def write_label_file(labels_to_class_names, dataset_dir,
   with tf.gfile.Open(labels_filename, 'w') as f:
     for label in labels_to_class_names:
       class_name = labels_to_class_names[label]
-      f.write('%d:%s\n' % (label, class_name))
+      f.write('%s\n' % class_name)
+      #f.write('%d:%s\n' % (label, class_name))
 
 
 def has_labels(dataset_dir, filename=LABELS_FILENAME):
@@ -144,7 +169,36 @@ def read_label_file(dataset_dir, filename=LABELS_FILENAME):
   lines = filter(None, lines)
 
   labels_to_class_names = {}
+  index = 0
   for line in lines:
-    index = line.index(':')
-    labels_to_class_names[int(line[:index])] = line[index+1:]
+    labels_to_class_names[index] = line
+    index += 1
+  # for line in lines:
+  #   index = line.index(':')
+  #   labels_to_class_names[int(line[:index])] = line[index+1:]
   return labels_to_class_names
+
+
+def open_sharded_output_tfrecords(exit_stack, base_path, num_shards):
+  """Opens all TFRecord shards for writing and adds them to an exit stack.
+
+  Args:
+    exit_stack: A context2.ExitStack used to automatically closed the TFRecords
+      openein this function.
+    base_path: The base path for all shards
+    num_shards: The number of shards
+
+  Returns:
+    The list of opened TFRecords. Position k in the list corresponds to shard k.
+  """
+  tf_record_output_filenames = [
+      '{}-{:05d}-of-{:05d}'.format(base_path, idx, num_shards)
+      for idx in range(num_shards)
+  ]
+
+  tfrecords = [
+      exit_stack.enter_context(tf.python_io.TFRecordWriter(file_name))
+      for file_name in tf_record_output_filenames
+  ]
+
+  return tfrecords
