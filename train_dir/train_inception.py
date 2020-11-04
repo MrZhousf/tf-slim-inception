@@ -50,7 +50,7 @@ class Inception(object):
         self.gpu_with_train = gpu_with_train
         self.gpu_with_eval = gpu_with_eval
         self.model_dir = os.path.dirname(os.getcwd()) + '/model/research/slim'
-        self.mymodels_dir = os.path.dirname(os.getcwd()) + '/my_models'
+        self.mymodels_dir = os.path.dirname(os.getcwd()) + '/train_dir'
         self.initial_checkpoint = self.mymodels_dir + '/' + model_name + '/' + model_name + '.ckpt'
         self.dataset = dataset
         self.train_num = train_num
@@ -304,8 +304,8 @@ class TrainFlowersV4(Inception):
 
 if __name__ == '__main__':
     model = TrainFlowersV3()
-    # model.train()
-    model.eval()
+    model.train()
+    # model.eval()
     # model.show_train()
     # model.show_eval()
     # model.export()
