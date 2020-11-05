@@ -5,7 +5,7 @@ tensorflow-slim下的inception_v3、inception_v4、inception_resnet_v2分类模�
 
 ## 相关截图
 ### 项目结构
-![](https://github.com/MrZhousf/tf-slim-inception/blob/master/pic/11.png?raw=true)
+![](https://github.com/MrZhousf/tf-slim-inception/blob/master/pic/10.png?raw=true)
 
 ### 路径配置
 将path.sh中的路径修改成自己的路径即可
@@ -19,8 +19,24 @@ export PYTHONPATH=$PYTHONPATH:/Users/zhousf/tensorflow/zhousf/tf-slim-inception
 ```
 
 ### 数据制作
-image_classify_inception.py
-数据制作请参考flowers
+generate_tf_record_file.py
+![](https://github.com/MrZhousf/tf-slim-inception/blob/master/pic/11.png?raw=true)
+
+自动生成训练集与评估集描述文件：train_eval_num.txt
+```html
+{"train": 3306, "validation": 364, "classes_num": 5}
+
++------------+-----------+----------+-------+
+| class_name | train_num | eval_num | total |
++------------+-----------+----------+-------+
+| tulips     |    720    |    79    |  799  |
+| roses      |    577    |    64    |  641  |
+| sunflowers |    630    |    69    |  699  |
+| daisy      |    570    |    63    |  633  |
+| dandelion  |    809    |    89    |  898  |
++------------+-----------+----------+-------+
+```
+
 
 ### 训练
 * train.py/train.sh
