@@ -156,15 +156,11 @@ def main(_):
         predictions = tf.argmax(logits, 1)
         labels = tf.squeeze(labels)
         # Define the metrics:
-        tp = slim.metrics.streaming_true_positives(predictions, labels)
-        tn = slim.metrics.streaming_true_negatives(predictions, labels)
-        fp = slim.metrics.streaming_false_positives(predictions, labels)
-        fn = slim.metrics.streaming_false_negatives(predictions, labels)
         names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
-            'TP': tp,
-            'TN': tn,
-            'FP': fp,
-            'FN': fn,
+            'TP': slim.metrics.streaming_true_positives(predictions, labels),
+            'TN': slim.metrics.streaming_true_negatives(predictions, labels),
+            'FP': slim.metrics.streaming_false_positives(predictions, labels),
+            'FN': slim.metrics.streaming_false_negatives(predictions, labels),
             'Precision': slim.metrics.streaming_precision(predictions, labels),
             'Recall_5': slim.metrics.streaming_recall_at_k(
                 logits, labels, 5),
@@ -188,7 +184,10 @@ def main(_):
                 fp = value
             if name == "FN":
                 fn = value
-        accuracy = (tp + tn) / (tp + fp + tn + fn)
+        total = tp + fp + tn + fn
+        if total == 0:
+            total = 1
+        accuracy = (tp + tn) / total
         for name, value in names_to_values.items():
             summary_name = 'eval/%s' % name
             op = tf.summary.scalar(summary_name, value, collections=[])
