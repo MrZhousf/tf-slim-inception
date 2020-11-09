@@ -1,7 +1,7 @@
 ## tf-slim-inception
 tensorflow-slim下的inception_v3、inception_v4、inception_resnet_v2分类模型的数据制作、训练、评估、导出模型、测试。
 训练比较请参考：[InceptionV3、InceptionV4图像分类训练与比较](https://blog.csdn.net/zsf442553199/article/details/85683335)
-
+<br><b>修改了原作者的二分类评估方法，通过计算accuracy = (tp + tn) / (tp + fp + tn + fn)支持多分类评估指标。</b>
 
 ## 相关截图
 ### 项目结构
@@ -45,6 +45,16 @@ generate_tf_record_file.py
 ### 评估
 * eval.py/eval.sh
 * 终端中运行：source eval.sh 即可
+```html
+eval/TP[2838]
+eval/FP[7]
+eval/TN[293]
+eval/FN[606]
+eval/Accuracy[0.836271346]
+eval/Recall_5[0.933493614]
+eval/Precision[0.99753952]
+```
+
 
 ### 可视化
 * show_train.py 训练
