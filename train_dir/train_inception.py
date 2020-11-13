@@ -313,10 +313,12 @@ class Inception(object):
             (cls_count, cls_total) = res.get(cls_des)
             cls_total = 1 if cls_total == 0 else cls_total
             cls_rate = (cls_count / cls_total) * 100
-            table.add_row([cls_des, cls_count, cls_total, str(cls_rate) + "%"])
+            p_rate = "%.2f" % cls_rate + "%"
+            table.add_row([cls_des, cls_count, cls_total, str(p_rate) + "%"])
         table.align["class_name"] = "l"
         total = 1 if total == 0 else total
         rate = (true_num / total) * 100
+        rate = "%.2f" % rate + "%"
         print(table)
         print("Accuracy={0}/{1}={2}%".format(true_num, total, rate))
 
@@ -367,11 +369,13 @@ class TrainFlowersV4(Inception):
 
 
 if __name__ == '__main__':
-    model = TrainFlowersV3()
+    model = TrainFlowersV4()
     model.train()
     # model.eval()
     # model.show_train()
     # model.show_eval()
     # model.export()
     # print(model.vis_single_img("/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/sorter/id card/0a565f44c5c5d45cbca4b2d6702af268.jpg"))
+    # model.show_accuracy("/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/sorter/test_images")
+
 
