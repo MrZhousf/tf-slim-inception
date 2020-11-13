@@ -6,6 +6,7 @@
 import os
 import warnings
 import shutil
+import time
 import numpy as np
 from train_dir.infer_inception import Prediction
 
@@ -188,10 +189,12 @@ class Inception(object):
         export_command = 'python %s/export_inference_graph.py \
                          --model_name=%s \
                          --output_file=%s \
+                         --dataset_dir=%s \
                          --dataset_name=%s \
                          --image_size=%d ' % (self.model_dir,
                                               self.model_name,
                                               save_pb,
+                                              self.dataset_dir,
                                               self.dataset,
                                               self.image_size)
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -255,6 +258,41 @@ class Inception(object):
         tensor_board = 'tensorboard --logdir %s/ --port %d' % (self.train_dir, port)
         os.system(tensor_board)
 
+    def show_accuracy(self, img_dir):
+        file_list = os.listdir(self.save_model_dir)
+        check_file = []
+        for i in range(0, len(file_list)):
+            if os.path.isdir(os.path.join(self.save_model_dir, file_list[i])):
+                check_file.append(int(file_list[i]))
+        if len(check_file) == 0:
+            warnings.warn('frozen_inference_graph.pb不存在')
+            return
+        max_num = str(max(check_file))
+        pb_model_path = self.save_model_dir + '/' + max_num + '/frozen_inference_graph.pb'
+        if not os.path.exists(pb_model_path):
+            warnings.warn(pb_model_path + '不存在')
+            return
+        print(pb_model_path)
+        self.classify = Prediction(pb_file=pb_model_path,
+                                   label_file=self.class_names_file,
+                                   num_top_predictions=1,
+                                   gpu_assigned=self.gpu_with_train,
+                                   model_type=self.output_node_name + ":0")
+        total = 0
+        true_num = 0
+        for root, dirs, files in os.walk(img_dir):
+            for file in files:
+                start = time.time()
+                current_file = os.path.join(root, file)
+                class_name = os.path.basename(os.path.dirname(current_file))
+                result = self.classify.infer(current_file)
+                if result[0][0] == class_name:
+                    true_num += 1
+                total += 1
+                print('{0} Time cost：{1}s {2}'.format(total, time.time() - start, result))
+        rate = (true_num / total) * 100
+        print("accuracy={0}/{1}={2}%".format(true_num, total, rate))
+
 
 class TrainFlowersV3(Inception):
 
@@ -309,5 +347,5 @@ if __name__ == '__main__':
     # model.show_train()
     # model.show_eval()
     # model.export()
-    # print(model.vis_single_img("/home/ubuntu/桌面/AI_demo/分类/others其他/biaodiche1521434853703.jpg"))
+    # print(model.vis_single_img("/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/sorter/id card/0a565f44c5c5d45cbca4b2d6702af268.jpg"))
 

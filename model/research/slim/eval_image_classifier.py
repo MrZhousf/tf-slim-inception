@@ -161,6 +161,7 @@ def main(_):
             'TN': slim.metrics.streaming_true_negatives(predictions, labels),
             'FP': slim.metrics.streaming_false_positives(predictions, labels),
             'FN': slim.metrics.streaming_false_negatives(predictions, labels),
+            'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
             'Precision': slim.metrics.streaming_precision(predictions, labels),
             'Recall_5': slim.metrics.streaming_recall_at_k(
                 logits, labels, 5),
@@ -171,31 +172,31 @@ def main(_):
         #         logits, labels, 5),
         # })
         # Print the summaries to screen.
-        tp = 0
-        tn = 0
-        fp = 0
-        fn = 0
-        for name, value in names_to_values.items():
-            if name == "TP":
-                tp = value
-            if name == "TN":
-                tn = value
-            if name == "FP":
-                fp = value
-            if name == "FN":
-                fn = value
-        total = tp + fp + tn + fn
-        if total == 0:
-            total = 1
-        accuracy = (tp + tn) / total
         for name, value in names_to_values.items():
             summary_name = 'eval/%s' % name
             op = tf.summary.scalar(summary_name, value, collections=[])
             op = tf.Print(op, [value], summary_name)
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
-        op = tf.summary.scalar("eval/Accuracy", accuracy, collections=[])
-        op = tf.Print(op, [accuracy], "eval/Accuracy")
-        tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+        # tp = 0
+        # tn = 0
+        # fp = 0
+        # fn = 0
+        # for name, value in names_to_values.items():
+        #     if name == "TP":
+        #         tp = value
+        #     if name == "TN":
+        #         tn = value
+        #     if name == "FP":
+        #         fp = value
+        #     if name == "FN":
+        #         fn = value
+        # total = tp + fp + tn + fn
+        # if total == 0:
+        #     total = 1
+        # accuracy = (tp + tn) / total
+        # op = tf.summary.scalar("eval/Accuracy", accuracy, collections=[])
+        # op = tf.Print(op, [accuracy], "eval/Accuracy")
+        # tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
         # TODO(sguada) use num_epochs=1
         if FLAGS.max_num_batches:

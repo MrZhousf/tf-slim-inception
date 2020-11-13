@@ -30,6 +30,7 @@ from __future__ import print_function
 import math
 import os
 import sys
+import random
 
 import tensorflow as tf
 
@@ -37,8 +38,7 @@ from datasets import dataset_utils
 from prettytable import PrettyTable
 import json
 
-# 生成record文件的个数
-_NUM_SHARDS = 4
+_NUM_SHARDS = 5
 
 
 class ImageReader(object):
@@ -61,7 +61,7 @@ class ImageReader(object):
         return image
 
 
-def _get_filenames_and_classes(dataset_dir, trian_eval_split):
+def _get_filenames_and_classes_balance(dataset_dir, trian_eval_split):
     """Returns a list of filenames and inferred class names.
 
     Args:
@@ -119,12 +119,12 @@ def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir, dat
     assert split_name in ['train', 'validation']
 
     num_per_shard = int(math.ceil(len(filenames) / float(_NUM_SHARDS)))
-    error_img = []
-    valid_img_num = 0
+
     with tf.Graph().as_default():
         image_reader = ImageReader()
 
         with tf.Session('') as sess:
+
             for shard_id in range(_NUM_SHARDS):
                 output_filename = _get_dataset_filename(
                     dataset_dir, split_name, shard_id, data_name)
@@ -133,31 +133,23 @@ def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir, dat
                     start_ndx = shard_id * num_per_shard
                     end_ndx = min((shard_id + 1) * num_per_shard, len(filenames))
                     for i in range(start_ndx, end_ndx):
-                        try:
-                            sys.stdout.write('\r>> Converting image %d/%d shard %d' % (
-                                i + 1, len(filenames), shard_id))
-                            sys.stdout.flush()
+                        sys.stdout.write('\r>> Converting image %d/%d shard %d' % (
+                            i + 1, len(filenames), shard_id))
+                        sys.stdout.flush()
 
-                            # Read the filename:
-                            image_data = tf.gfile.GFile(filenames[i], 'rb').read()
-                            height, width = image_reader.read_image_dims(sess, image_data)
+                        # Read the filename:
+                        image_data = tf.gfile.GFile(filenames[i], 'rb').read()
+                        height, width = image_reader.read_image_dims(sess, image_data)
 
-                            class_name = os.path.basename(os.path.dirname(filenames[i]))
-                            class_id = class_names_to_ids[class_name]
+                        class_name = os.path.basename(os.path.dirname(filenames[i]))
+                        class_id = class_names_to_ids[class_name]
 
-                            example = dataset_utils.image_to_tfexample(
-                                image_data, b'jpg', height, width, class_id)
-                            tfrecord_writer.write(example.SerializeToString())
-                            valid_img_num += 1
-                        except Exception as e:
-                            error_img.append(filenames[i])
+                        example = dataset_utils.image_to_tfexample(
+                            image_data, b'jpg', height, width, class_id)
+                        tfrecord_writer.write(example.SerializeToString())
+
     sys.stdout.write('\n')
     sys.stdout.flush()
-    if len(error_img) > 0:
-        print("ERROR IMAGE:")
-    for img in error_img:
-        print(img)
-    return valid_img_num
 
 
 def _dataset_exists(dataset_dir, data_name):
@@ -170,7 +162,7 @@ def _dataset_exists(dataset_dir, data_name):
     return True
 
 
-def run(dataset_dir, data_name, train_eval_split=0.2):
+def run_balance(dataset_dir, data_name, train_eval_split=0.2):
     """Runs the download and conversion operation.
 
     Args:
@@ -185,15 +177,17 @@ def run(dataset_dir, data_name, train_eval_split=0.2):
         print('Dataset files already exist. Exiting without re-creating them.')
         return
 
-    training_filenames, validation_filenames, class_names, describe = _get_filenames_and_classes(
+    training_filenames, validation_filenames, class_names, describe = _get_filenames_and_classes_balance(
         dataset_dir, train_eval_split)
     class_names_to_ids = dict(zip(class_names, range(len(class_names))))
-
+    random.seed(0)
+    random.shuffle(training_filenames)
+    random.shuffle(validation_filenames)
     # First, convert the training and validation sets.
-    valid_train_img_num = _convert_dataset('train', training_filenames, class_names_to_ids,
-                                           dataset_dir, data_name)
-    valid_eval_img_num = _convert_dataset('validation', validation_filenames, class_names_to_ids,
-                                          dataset_dir, data_name)
+    _convert_dataset('train', training_filenames, class_names_to_ids,
+                     dataset_dir, data_name)
+    _convert_dataset('validation', validation_filenames, class_names_to_ids,
+                     dataset_dir, data_name)
     num_file = os.path.join(dataset_dir, "train_eval_num.txt")
     table = PrettyTable(["class_name", "train_num", "eval_num", "total"])
     for cls_des in describe:
@@ -202,7 +196,9 @@ def run(dataset_dir, data_name, train_eval_split=0.2):
              describe.get(cls_des).get("eval_num"),
              describe.get(cls_des).get("total")])
     table.align["class_name"] = "l"  # l=left
-    js = json.dumps({"train": valid_train_img_num, "validation": valid_eval_img_num, "classes_num": len(class_names)})
+    js = json.dumps({"train": len(training_filenames),
+                     "validation": len(validation_filenames),
+                     "classes_num": len(class_names)})
     with tf.gfile.Open(num_file, 'w') as f:
         f.write(js)
         f.write('\n')

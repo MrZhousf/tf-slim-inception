@@ -39,12 +39,12 @@ def generate_record_file(dataset_dir, data_name, train_eval_split):
     Returns:
 
     """
-    convert_to_record_file.run(dataset_dir=dataset_dir, data_name=data_name, train_eval_split=train_eval_split)
+    convert_to_record_file.run_balance(dataset_dir=dataset_dir, data_name=data_name, train_eval_split=train_eval_split)
 
 
 if __name__ == "__main__":
-    _img_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/flowers'
-    _unqualified_dir = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/flowers_error"
+    _img_dir = '/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/flowers'
+    _unqualified_dir = "/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/flowers_error"
     # check_data(data_dir=_img_dir, unqualified_dir=_unqualified_dir)
     generate_record_file(dataset_dir=_img_dir, data_name="flowers", train_eval_split=0.1)
 
