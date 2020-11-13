@@ -1,7 +1,9 @@
 ## tf-slim-inception
-tensorflow-slim下的inception_v3、inception_v4、inception_resnet_v2分类模型的数据制作、训练、评估、导出模型、测试。
+tensorflow-slim下的inception_v3、inception_v4、inception_resnet_v2分类模型的数据制作、训练、评估、导出模型、测试。<br>
+致力于提供最简洁的分类模型操作API。<br>
+<b>增加了数据集制作各个类别的数据均衡处理（train_eval_num.txt）；<br>
+采用无侵入式数据集制作与生成方法，运行generate_tf_record_file.py即可生成数据集（无需再创建dataset的相关py文件）。</b><br>
 训练比较请参考：[InceptionV3、InceptionV4图像分类训练与比较](https://blog.csdn.net/zsf442553199/article/details/85683335)
-<br><b>增加了数据集制作的各类别的数据均衡处理（train_eval_num.txt）。</b>
 
 ## 相关截图
 ### 项目结构
