@@ -8,6 +8,7 @@ import warnings
 import shutil
 import time
 import numpy as np
+from prettytable import PrettyTable
 from train_dir.infer_inception import Prediction
 
 MODEL_INCEPTION_V3 = 'inception_v3'
@@ -259,6 +260,8 @@ class Inception(object):
         os.system(tensor_board)
 
     def show_accuracy(self, img_dir):
+        if not os.path.exists(img_dir):
+            return warnings.warn('目录不存在：{0}'.format(img_dir))
         file_list = os.listdir(self.save_model_dir)
         check_file = []
         for i in range(0, len(file_list)):
@@ -280,6 +283,7 @@ class Inception(object):
                                    model_type=self.output_node_name + ":0")
         total = 0
         true_num = 0
+        res = {}
         for root, dirs, files in os.walk(img_dir):
             for file in files:
                 start = time.time()
@@ -288,11 +292,33 @@ class Inception(object):
                 result = self.classify.infer(current_file)
                 if result[0][0] == class_name:
                     true_num += 1
+                    if class_name in res:
+                        (cls_count, cls_total) = res.get(class_name)
+                        cls_count += 1
+                        cls_total += 1
+                        res[class_name] = (cls_count, cls_total)
+                    else:
+                        res[class_name] = (1, 1)
+                else:
+                    if class_name in res:
+                        (cls_count, cls_total) = res.get(class_name)
+                        cls_total += 1
+                        res[class_name] = (cls_count, cls_total)
+                    else:
+                        res[class_name] = (0, 1)
                 total += 1
                 print('{0} Time cost：{1}s {2}'.format(total, time.time() - start, result))
+        table = PrettyTable(["class_name", "correct total", "total of all", "accuracy"])
+        for cls_des in res:
+            (cls_count, cls_total) = res.get(cls_des)
+            cls_total = 1 if cls_total == 0 else cls_total
+            cls_rate = (cls_count / cls_total) * 100
+            table.add_row([cls_des, cls_count, cls_total, str(cls_rate) + "%"])
+        table.align["class_name"] = "l"
+        total = 1 if total == 0 else total
         rate = (true_num / total) * 100
-        print("accuracy={0}/{1}={2}%".format(true_num, total, rate))
-
+        print(table)
+        print("Accuracy={0}/{1}={2}%".format(true_num, total, rate))
 
 class TrainFlowersV3(Inception):
 
