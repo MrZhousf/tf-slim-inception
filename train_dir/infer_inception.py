@@ -29,16 +29,21 @@ class Prediction(object):
         self.num_top_predictions = num_top_predictions
         self.model_type = model_type
         self.node_id_to_name = self.load()
-        with tf.gfile.FastGFile(self.pb_file , 'rb') as f:
-            graph_def = tf.GraphDef()
-            graph_def.ParseFromString(f.read())
-            tf.import_graph_def(graph_def, name='')
-            self.config = tf.ConfigProto()
-            self.config.gpu_options.per_process_gpu_memory_fraction = per_process_gpu_memory_fraction
-            self.config.gpu_options.allow_growth = True
-            os.environ["CUDA_VISIBLE_DEVICES"] = gpu_assigned
-            self.sess = tf.Session(config=self.config)
-            self.softmax_tensor = self.sess.graph.get_tensor_by_name(self.model_type)
+        with tf.gfile.FastGFile(self.pb_file, 'rb') as f:
+            graph = tf.Graph()
+            with graph.as_default():
+                graph_def = tf.GraphDef()
+                graph_def.ParseFromString(f.read())
+                tf.import_graph_def(graph_def, name='')
+                self.config = tf.ConfigProto()
+                self.config.gpu_options.per_process_gpu_memory_fraction = per_process_gpu_memory_fraction
+                if per_process_gpu_memory_fraction == 0.0:
+                    self.config.gpu_options.allow_growth = True
+                else:
+                    self.config.gpu_options.allow_growth = False
+                os.environ["CUDA_VISIBLE_DEVICES"] = gpu_assigned
+                self.sess = tf.Session(config=self.config, graph=graph)
+                self.softmax_tensor = self.sess.graph.get_tensor_by_name(self.model_type)
 
     def load(self):
         node_id_to_name = {}
@@ -87,10 +92,12 @@ class Prediction(object):
 
     def infer(self, image_file):
         image_data = tf.gfile.FastGFile(image_file, 'rb').read()
-        image_data = tf.image.decode_jpeg(image_data)
-        image_data = self.deal_image(image_data, self.image_size, self.image_size)
-        image_data = tf.expand_dims(image_data, 0)
-        image_data = self.sess.run(image_data)
+        with tf.Graph().as_default():
+            image_data = tf.image.decode_jpeg(image_data)
+            image_data = self.deal_image(image_data, self.image_size, self.image_size)
+            image_data = tf.expand_dims(image_data, 0)
+            with tf.Session() as sess:
+                image_data = sess.run(image_data)
         predictions = self.sess.run(self.softmax_tensor, {'input:0': image_data})
         predictions = np.squeeze(predictions)
         result_ = {}
@@ -100,6 +107,7 @@ class Prediction(object):
             score = predictions[node_id]
             result_[human_string] = score
         return sorted(result_.items(), key=lambda d: d[1], reverse=True)
+
 
 
 if __name__ == "__main__":
