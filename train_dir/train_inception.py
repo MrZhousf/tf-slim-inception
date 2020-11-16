@@ -285,13 +285,15 @@ class Inception(object):
         total = 0
         true_num = 0
         res = {}
+        res_count = {}
         for root, dirs, files in os.walk(img_dir):
             for file in files:
                 start = time.time()
                 current_file = os.path.join(root, file)
                 class_name = os.path.basename(os.path.dirname(current_file))
                 result = self.classify.infer(current_file)
-                if result[0][0] == class_name:
+                infer_class_name = result[0][0]
+                if infer_class_name == class_name:
                     true_num += 1
                     if class_name in res:
                         (cls_count, cls_total) = res.get(class_name)
@@ -307,15 +309,21 @@ class Inception(object):
                         res[class_name] = (cls_count, cls_total)
                     else:
                         res[class_name] = (0, 1)
+                if infer_class_name in res_count:
+                    cls_count = res_count.get(infer_class_name)
+                    cls_count += 1
+                    res_count[infer_class_name] = cls_count
+                else:
+                    res_count[infer_class_name] = 1
                 total += 1
                 print('{0} Time cost：{1}s {2}'.format(total, time.time() - start, result))
-        table = PrettyTable(["class_name", "correct total", "total of all", "accuracy"])
+        table = PrettyTable(["class_name", "correct total", "total of all", "infer total", "accuracy"])
         for cls_des in res:
             (cls_count, cls_total) = res.get(cls_des)
             cls_total = 1 if cls_total == 0 else cls_total
             cls_rate = (cls_count / cls_total) * 100
             p_rate = "%.2f" % cls_rate + "%"
-            table.add_row([cls_des, cls_count, cls_total, str(p_rate)])
+            table.add_row([cls_des, cls_count, cls_total, res_count.get(cls_des), str(p_rate)])
         table.align["class_name"] = "l"
         total = 1 if total == 0 else total
         rate = (true_num / total) * 100
