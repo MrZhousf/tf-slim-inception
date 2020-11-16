@@ -315,7 +315,7 @@ class Inception(object):
             cls_total = 1 if cls_total == 0 else cls_total
             cls_rate = (cls_count / cls_total) * 100
             p_rate = "%.2f" % cls_rate + "%"
-            table.add_row([cls_des, cls_count, cls_total, str(p_rate) + "%"])
+            table.add_row([cls_des, cls_count, cls_total, str(p_rate)])
         table.align["class_name"] = "l"
         total = 1 if total == 0 else total
         rate = (true_num / total) * 100
