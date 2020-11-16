@@ -259,7 +259,7 @@ class Inception(object):
         tensor_board = 'tensorboard --logdir %s/ --port %d' % (self.train_dir, port)
         os.system(tensor_board)
 
-    def show_accuracy(self, img_dir):
+    def show_accuracy(self, img_dir, pb_index=None):
         if not os.path.exists(img_dir):
             return warnings.warn('目录不存在：{0}'.format(img_dir))
         file_list = os.listdir(self.save_model_dir)
@@ -270,8 +270,9 @@ class Inception(object):
         if len(check_file) == 0:
             warnings.warn('frozen_inference_graph.pb不存在')
             return
-        max_num = str(max(check_file))
-        pb_model_path = self.save_model_dir + '/' + max_num + '/frozen_inference_graph.pb'
+        max_num = max(check_file) if pb_index is None else pb_index
+        pb_dir = self.save_model_dir + '/' + str(max_num)
+        pb_model_path = pb_dir + '/frozen_inference_graph.pb'
         if not os.path.exists(pb_model_path):
             warnings.warn(pb_model_path + '不存在')
             return
@@ -320,7 +321,11 @@ class Inception(object):
         rate = (true_num / total) * 100
         rate = "%.2f" % rate + "%"
         print(table)
-        print("Accuracy={0}/{1}={2}%".format(true_num, total, rate))
+        print("Accuracy={0}/{1}={2}".format(true_num, total, rate))
+        with open(os.path.join(pb_dir, "accuracy.txt"), 'w') as f:
+            f.write("Accuracy={0}/{1}={2}\n".format(true_num, total, rate))
+            f.write('%s\n' % str(table))
+
 
 class TrainFlowersV3(Inception):
 
@@ -377,5 +382,4 @@ if __name__ == '__main__':
     # model.export()
     # print(model.vis_single_img("/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/test/sorter/id card/0a565f44c5c5d45cbca4b2d6702af268.jpg"))
     # model.show_accuracy("/media/ubuntu/b8f80802-d95a-41c3-b157-6f4e34967425/data-zhousf/sorter/test_images")
-
 
